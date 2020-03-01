@@ -1,0 +1,71 @@
+Ubuntu16.04 安装BOA服务器
+
+1,下载源码
+	http://www.boa.org/
+	boa-0.94.13.tar
+	
+2，修改源码
+	解压源码，进入子目录src，修改一下几个文件
+	（1）compat.h
+		将#define TIMEZONE_OFFSET(foo) foo##->tm_gmtoff
+		改为#define TIMEZONE_OFFSET(foo) foo->tm_gmtoff
+	（2）defines.h
+		默认定义可执行所在路径#define SERVER_ROOT "/etc/boa"
+		可根据需求修改，此处忽略
+	（3）boa.c
+		将下面这段代码注释掉
+		if (setuid(0) != -1) {
+            DIE("icky Linux kernel bug!");
+        }
+	（4）log.c
+		将下面这段代码注释掉
+		if (dup2(error_log, STDERR_FILENO) == -1) {
+            DIE("unable to dup2 the error log");
+        }
+	经过上述步骤，源码基本修改完成。
+	
+3，编译源码
+	在src目录下，执行
+	./configure && make
+	会报错，因此需提前安装下面这两个库
+	sudo apt-get install flex bison
+	安装完成后，编译成功
+	
+4，配置
+	（1）创建/etc/boa/路径
+		sudo mkdir /etc/boa/
+	（2）将生成的可执行程序以及配置文件复制到/etc/boa/目录下
+		cd src/
+		sudo cp boa boa_indexer /etc/boa
+		sudo cp ../boa.conf /etc/boa/
+	（3）修改boa配置文件
+		sudo vi /etc/boa/boa.conf
+		修改以下内容
+		Port 8080
+		User 0
+		Group 0
+	（4）根据boa.conf中定义的内容再配置
+		创建日志文件并修改权限
+		sudo mkdir -p /var/log/boa/
+		sudo touch /var/log/boa/error_log /var/log/boa/access_log
+		sudo chmod -R 777 /var/log/boa/
+		创建html文件
+		vi index.html
+		sudo mkdir -p /var/www/
+		sudo cp index.html /var/www/
+		sudo chmod -R 777 /var/www/
+		示例index.html文件内容
+		<HTML>
+        <HEAD>
+                <TITLE>Hello World</TITLE>
+        </HEAD>
+                <BODY>
+                        Hello,my world!
+                </BODY>
+		</HTML>
+
+5，测试
+	执行
+	/etc/boa/boa​
+	查询Ubuntu的IP地址ipaddr
+	在浏览器地址栏输入http://$(ipaddr):8080/
